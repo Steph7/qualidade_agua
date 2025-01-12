@@ -1,0 +1,6 @@
+dnspython==2.7.0
+gunicorn==23.0.0
+packaging==24.2
+paho-mqtt==2.1.0
+pymongo==4.10.1
+requests==2.32.3
