@@ -1,6 +1,6 @@
 #!/bin/bash
 # Inicia o primeiro processo
-python data_processor.py &
+python data_processor3.py &
 
 # Inicia o segundo processo
 python data_collector.py &

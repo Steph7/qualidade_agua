@@ -231,17 +231,16 @@ def loop_processar_dados():
             prod_Teste = nota_qualidade_agua(estacao.dados, pesos, limites)
 
             estacao = estacao.id_estacao
-            colecao = db[estacao] #encontra coleção no BD
 
             nota_quali = "{:.3f}".format(round(prod_Teste, 3))
             quali = qualificar_agua(prod_Teste)
             
             # Expor as métricas para o Prometheus
-            nota_quali_metric.labels(estacao=estacao_nome).set(nota_quali)
-            qualidade_metric.labels(estacao=estacao_nome).set(quali)
+            nota_quali_metric.labels(estacao=estacao).set(nota_quali)
+            qualidade_metric.labels(estacao=estacao).set(quali)
 
-            print(f"Estação: {estacao_nome}")
-            print(f"Nota: {nota_quali:.3f} --- Avaliação: {avaliacao}")
+            print(f"Estação: {estacao}")
+            print(f"Nota: {nota_quali:.3f} --- Avaliação: {quali}")
             print("\n")
         
         time.sleep(1080) # Aguarda por 18 minutos
