@@ -254,7 +254,7 @@ def on_message(client, userdata, msg):
 
             if contador == 49:
                 dados_recebidos.set()
-                contador = 0
+                contador = 1
 
         else:
             # Imprime a mensagem recebida
