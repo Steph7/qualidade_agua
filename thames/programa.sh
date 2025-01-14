@@ -6,4 +6,4 @@ python data_processor5.py &
 python data_collector.py &
 
 # Aguarda ambos os processos para manter o container ativo
-wait
+tail -f /dev/null
