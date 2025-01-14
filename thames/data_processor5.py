@@ -85,13 +85,6 @@ limites = {
 
 # Para cada sensor, obtém o último valor registrado
 def obter_dados_sensor(estacao, sensor, valor, list_obj):
-    """
-    if valor is not None:
-        dados_estacao[sensor] = valor
-
-    estacao_obj = Estacao(estacao, dados_estacao)
-    list_obj.append(estacao_obj"
-    """
     if valor is not None:
         # Procura a estação na lista de objetos
         estacao_encontrada = False
@@ -225,9 +218,8 @@ def loop_processar_dados():
             nota_qualidade.labels(estacao=estacao).set(nota_quali)
             avaliacao_qualidade.labels(estacao=estacao).set(quali)
 
-            print(f"Estação: {estacao}")
-            print(f"Nota: {nota_quali} --- Avaliação: {quali}")
-            print("\n")
+            print(f"Enviado - Estação: {estacao}, Nota: {nota_quali}, Avaliação: {quali}"))
+
         # Limpar dados
         lista_estacoes.clear()
 
