@@ -168,7 +168,8 @@ def loop_coletar_dados(client):
             time.sleep(1) # Espera um pouco para não sobrecarregar o broker
 
         # Aguarda por novos dados dos sensores
-        time.sleep(1080)  # 18 min 
+        #time.sleep(1080)  # 18 min 
+        time.sleep(300) # 5 min
 
    
 TOPIC = "/thames"

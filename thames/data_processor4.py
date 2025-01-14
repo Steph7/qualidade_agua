@@ -17,12 +17,24 @@ avaliacao_qualidade = Gauge('avaliacao_qualidade', 'Avaliação da qualidade da 
 
 start_http_server(8000) 
 
+url_prometheus = "http://localhost:9090/api/v1/query"
+
+TIMEOUT = 40 # Se em 40s não for recebida uma nova mensagem, começa o processamento dos dados
+
+tempo_ultima_msg = time.time()
+tempo_esgotado = False
+
+lock = threading.Lock()
 
 # Enviar dados para o Prometheus
 def enviar_dados_prometheus(estacao, sensor, data_hora, valor):
-    
+    global contador
     QUALIDADE_AGUA.labels(estacao=estacao, sensor=sensor, data_hora=data_hora).set(valor)
-    print(f"Enviado - Estação: {estacao}, Sensor: {sensor}, Valor: {valor}, Data_Hora: {data_hora}")
+    print(f"Enviado - ({contador}) Estação: {estacao}, Sensor: {sensor}, Valor: {valor}, Data_Hora: {data_hora}")
+    contador += 1
+
+    if(contador == 54):
+        contador = 0
 
 # Variável de controle para iniciar o processamento
 dados_recebidos = threading.Event()
@@ -81,40 +93,28 @@ limites = {
     "ph": (6.5, 9.5)                 # pH entre 6.5 e 9.5
 }
 
- # Retorna o último valor registrado para o sensor
-def obter_ultimo_valor(estacao, sensor):
-    query = f"{sensor}{{estacao=\"{estacao}\"}}"
-    
-    response = requests.get(url_prometheus, params={'query': query})
-    
-    if response.status_code == 200:
-        # Extrai os dados JSON da resposta
-        dados = response.json()
-        
-        if dados['status'] == 'success' and dados['data']['result']:
-            # O resultado é uma lista com os dados mais recentes do sensor
-            valor = float(dados['data']['result'][0]['value'][1])  # Obtendo o valor da métrica
-            return valor
-        else:
-            print(f"Nenhum dado encontrado para {sensor} na estação {estacao}")
-            return None
-    else:
-        print("Erro na requisição ao Prometheus:", response.status_code)
-    return None
-
-# Para cada sensor, obtém o último valor registrado
+ # Retorna o último valor registrado para todos os sensores de cada estação
 def obter_dados_estacao(estacao, list_obj):
-    dados_estacao = {}
+    query = "{" + f'estacao="{estacao}"' + "}"
     
-    sensores = ['amonio', 'temperatura', 'ph', 'oxigenio_dissolvido', 'turbidez', 'condutividade']
-    
-    for sensor in sensores:
-        valor = obter_ultimo_valor(estacao, sensor)
-        if valor is not None:
-            dados_estacao[sensor] = valor
-    
-    estacao_obj = Estacao(estacao, dados_estacao)
-    list_obj.append(estacao_obj)
+    try:
+        response = requests.get(url_prometheus, params={'query': query})
+        
+        if response.status_code == 200:
+            # Extrai os dados JSON da resposta
+            dados = response.json()
+            
+            if dados['status'] == 'success' and dados['data']['result']:
+                dados_estacao = {result['metric']['__name__']: float(result['value'][1]) for result in dados['data']['result']}
+                estacao_obj = Estacao(estacao, dados_estacao)
+                list_obj.append(estacao_obj)
+            else:
+                print(f"Nenhum dado encontrado para {sensor} na estação {estacao}")
+        else:
+            print("Erro na requisição ao Prometheus:", response.status_code)
+
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao conectar ao Prometheus: {e}")
 
 # Retornar um valor entre 0 e 100
 def normalizar_intervalo(valor, limite_inferior, limite_superior):
@@ -215,41 +215,91 @@ def qualificar_agua(produto):
     
     return qualidade
 
+def testar_conexao_prometheus():
+    try:
+        response = requests.get(url_prometheus, timeout=5)  # Endpoint de readiness do Prometheus
+        if response.status_code == 200:
+            return True
+        else:
+            print(f"Prometheus retornou status: {response.status_code}")
+            return False
+    except requests.ConnectionError:
+        print("Erro ao conectar ao Prometheus. Verifique se o serviço está ativo.")
+        return False
+    except Exception as e:
+        print(f"Erro inesperado ao testar conexão com o Prometheus: {e}")
+        return False
+
+
 # Função de processamento de dados
 def loop_processar_dados():
     while True:
-        dados_recebidos.wait()
-        lista_estacoes = []  # Lista para armazenar as instâncias de Estacao
+        try:
+            if not testar_conexao_prometheus():
+                print("Prometheus não está acessível. Tentando novamente em 10 segundos...")
+                time.sleep(10)
+                continue
 
-        # Acessar todas as estações no banco de dados
-        for estacao in estacoes_id:
-            obter_dados_estacao(estacao, lista_estacoes)
+            #dados_recebidos.wait()
+            lista_estacoes = []  # Lista para armazenar as instâncias de Estacao
 
-        for estacao in lista_estacoes:
-            prod_Teste = nota_qualidade_agua(estacao.dados, pesos, limites)
+            # Acessar todas as estações no banco de dados
+            for estacao in estacoes_id:
+                obter_dados_estacao(estacao, lista_estacoes)
 
-            estacao = estacao.id_estacao
+            for estacao in lista_estacoes:
+                if not estacao.dados:
+                    print("Sem dados suficientes para processamento.")
+                    continue
+                try:        
+                    prod_Teste = nota_qualidade_agua(estacao.dados, pesos, limites)
 
-            nota_quali = "{:.3f}".format(round(prod_Teste, 3))
-            quali = qualificar_agua(prod_Teste)
+                    estacao = estacao.id_estacao
+
+                    nota_quali = "{:.3f}".format(round(prod_Teste, 3))
+                    quali = qualificar_agua(prod_Teste)
+                    
+                    # Expor as métricas para o Prometheus
+                    nota_qualidade.labels(estacao=estacao).set(nota_quali)
+                    avaliacao_qualidade.labels(estacao=estacao).set(quali)
+
+                    print(f"Estação: {estacao}")
+                    print(f"Nota: {nota_quali:.3f} --- Avaliação: {quali}")
+                    print("\n")
+
+                except Exception as e:
+                    print(f"Erro no processamento da estação {estacao.id_estacao}: {e}")
             
-            # Expor as métricas para o Prometheus
-            nota_qualidade.labels(estacao=estacao).set(nota_quali)
-            avaliacao_qualidade.labels(estacao=estacao).set(quali)
+        except Exception as e:
+            print(f"Erro no loop principal de processamento: {e}")
+            time.sleep(10)  # Tempo para evitar repetição frenética em caso de erro
 
-            print(f"Estação: {estacao}")
-            print(f"Nota: {nota_quali:.3f} --- Avaliação: {quali}")
-            print("\n")
         
         #time.sleep(1080) # Aguarda por 18 minutos
-        time.sleep(100)
+        #time.sleep(100)
 
-        dados_recebidos.clear()
+        #dados_recebidos.clear()
+
+# Função para verificar se o TIMEOUT estourou
+def checar_tempo():
+    global tempo_ultima_msg, tempo_esgotado
+
+    while True:
+        time.sleep(1)  # Verifica o tempo a cada 1 segundo
+        with lock:  # Garante que a checagem seja thread-safe
+            if time.time() - tempo_ultima_msg > TIMEOUT:
+                print(f"Checar timeout...")
+                if not tempo_esgotado:
+                    print("Tempo esgotado! Iniciando o processamento de dados...")
+                    tempo_esgotado = True
+                    threading.Thread(target=loop_processar_dados, daemon=True).start() 
+                else:
+                    print(f"Erro ao prosseguir - TIMEOUT: {tempo_ultima_msg}")
 
 
 # Função de callback para salvar os dados recebidos
 def on_message(client, userdata, msg):
-    global contador
+    global tempo_ultima_msg, tempo_esgotado
     try:
         # Recebe a mensagem do broker
         dados = json.loads(msg.payload)
@@ -258,15 +308,13 @@ def on_message(client, userdata, msg):
         if "sensor" in dados and "valor" in dados:
             if "sensor" in dados and "valor" in dados:        
                 enviar_dados_prometheus(dados['estacao'], dados['sensor'], dados['data_hora'], dados['valor'])
-                contador += 1        
-
-            if contador == 48:
-                dados_recebidos.set()
-                contador = 0
 
         else:
             # Imprime a mensagem recebida
             print(json.dumps(dados, indent=4))
+
+        tempo_ultima_msg = time.time()
+        tempo_esgotado = False
     
     except json.JSONDecodeError:
         print("Erro ao decodificar a mensagem JSON.")
@@ -297,7 +345,7 @@ client.loop_start()
 
 # Função para processar os dados
 # Inicia o processamento em um thread separado
-processamento_thread = threading.Thread(target=loop_processar_dados)
+processamento_thread = threading.Thread(target=checar_tempo)
 processamento_thread.start()
 
 # Aguardar a interrupção do programa
@@ -306,3 +354,6 @@ try:
         time.sleep(1)
 except KeyboardInterrupt:
     print("Programa interrompido pelo usuário.")
+    client.loop_stop()
+    client.disconnect()
+    print("Cliente MQTT desconectado.")

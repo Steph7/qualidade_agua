@@ -15,8 +15,7 @@ QUALIDADE_AGUA = Gauge('qualidade_agua', 'Sensores avaliados no Rio Thames', ['e
 nota_qualidade = Gauge('nota_qualidade_agua', 'Nota de qualidade da água por estação', ['estacao'])
 avaliacao_qualidade = Gauge('avaliacao_qualidade', 'Avaliação da qualidade da água por estação', ['estacao'])
 
-start_http_server(8000) 
-
+start_http_server(8000)
 
 # Enviar dados para o Prometheus
 def enviar_dados_prometheus(estacao, sensor, data_hora, valor):
@@ -27,7 +26,10 @@ def enviar_dados_prometheus(estacao, sensor, data_hora, valor):
 # Variável de controle para iniciar o processamento
 dados_recebidos = threading.Event()
 
-contador = 0
+contador = 1
+
+dados_estacao = {}
+lista_estacoes = []  # Lista para armazenar as instâncias de Estacao
 
 class Estacao:
     def __init__(self, id_estacao, dados):
@@ -81,40 +83,30 @@ limites = {
     "ph": (6.5, 9.5)                 # pH entre 6.5 e 9.5
 }
 
- # Retorna o último valor registrado para o sensor
-def obter_ultimo_valor(estacao, sensor):
-    query = f"{sensor}{{estacao=\"{estacao}\"}}"
-    
-    response = requests.get(url_prometheus, params={'query': query})
-    
-    if response.status_code == 200:
-        # Extrai os dados JSON da resposta
-        dados = response.json()
-        
-        if dados['status'] == 'success' and dados['data']['result']:
-            # O resultado é uma lista com os dados mais recentes do sensor
-            valor = float(dados['data']['result'][0]['value'][1])  # Obtendo o valor da métrica
-            return valor
-        else:
-            print(f"Nenhum dado encontrado para {sensor} na estação {estacao}")
-            return None
-    else:
-        print("Erro na requisição ao Prometheus:", response.status_code)
-    return None
-
 # Para cada sensor, obtém o último valor registrado
-def obter_dados_estacao(estacao, list_obj):
-    dados_estacao = {}
-    
-    sensores = ['amonio', 'temperatura', 'ph', 'oxigenio_dissolvido', 'turbidez', 'condutividade']
-    
-    for sensor in sensores:
-        valor = obter_ultimo_valor(estacao, sensor)
-        if valor is not None:
-            dados_estacao[sensor] = valor
-    
+def obter_dados_sensor(estacao, sensor, valor, list_obj):
+    """
+    if valor is not None:
+        dados_estacao[sensor] = valor
+
     estacao_obj = Estacao(estacao, dados_estacao)
-    list_obj.append(estacao_obj)
+    list_obj.append(estacao_obj"
+    """
+    if valor is not None:
+        # Procura a estação na lista de objetos
+        estacao_encontrada = False
+        for est in list_obj:
+            if est.id_estacao == estacao:
+                # Se a estação já existir, adiciona ou atualiza o sensor
+                est.dados[sensor] = valor
+                estacao_encontrada = True
+                break
+        
+        # Se a estação não for encontrada, cria um novo objeto e adiciona à lista
+        if not estacao_encontrada:
+            dados_estacao = {sensor: valor}  # Cria o dicionário com o sensor e valor
+            estacao_obj = Estacao(estacao, dados_estacao)
+            list_obj.append(estacao_obj)
 
 # Retornar um valor entre 0 e 100
 def normalizar_intervalo(valor, limite_inferior, limite_superior):
@@ -189,48 +181,44 @@ def nota_qualidade_agua(estacao, pesos, limites):
     #print(nota_pH)
 
     produtorio = calcular_produtorio_com_pesos(notas_estacao, pesos)
-
+    notas_estacao.clear()
     return produtorio
 
 
 def qualificar_agua(produto):
-    qualidade = "não qualificado"
-    if 0 <= produto <= 25:
-        qualidade = "Péssima"
+    qualidade = -1
+    if 0 <= produto < 26:
+        qualidade =  1 # Péssima
 
-    if 26 <= produto <= 50:
-        qualidade = "Ruim"
+    if 26 <= produto < 51:
+        qualidade = 2 # Ruim
     
-    if 51 <= produto <= 70:
-        qualidade = "Razoável"
+    if 51 <= produto < 71:
+        qualidade = 3 # Razoável
 
-    if 71 <= produto <= 90:
-        qualidade = "Boa"
+    if 71 <= produto < 91:
+        qualidade = 4 # Boa
     
-    if 91 <= produto <= 100:
-        qualidade = "Ótima"
+    if 91 <= produto < 100:
+        qualidade = 5 # Ótima
     
     if produto >= 100:
-        qualidade = "Excelente"
+        qualidade = 6 # Excelente
     
     return qualidade
+
 
 # Função de processamento de dados
 def loop_processar_dados():
     while True:
         dados_recebidos.wait()
-        lista_estacoes = []  # Lista para armazenar as instâncias de Estacao
-
-        # Acessar todas as estações no banco de dados
-        for estacao in estacoes_id:
-            obter_dados_estacao(estacao, lista_estacoes)
-
+        #print(lista_estacoes)
         for estacao in lista_estacoes:
             prod_Teste = nota_qualidade_agua(estacao.dados, pesos, limites)
 
             estacao = estacao.id_estacao
 
-            nota_quali = "{:.3f}".format(round(prod_Teste, 3))
+            nota_quali = round(prod_Teste, 3)
             quali = qualificar_agua(prod_Teste)
             
             # Expor as métricas para o Prometheus
@@ -238,14 +226,12 @@ def loop_processar_dados():
             avaliacao_qualidade.labels(estacao=estacao).set(quali)
 
             print(f"Estação: {estacao}")
-            print(f"Nota: {nota_quali:.3f} --- Avaliação: {quali}")
+            print(f"Nota: {nota_quali} --- Avaliação: {quali}")
             print("\n")
-        
-        #time.sleep(1080) # Aguarda por 18 minutos
-        time.sleep(100)
+        # Limpar dados
+        lista_estacoes.clear()
 
         dados_recebidos.clear()
-
 
 # Função de callback para salvar os dados recebidos
 def on_message(client, userdata, msg):
@@ -256,11 +242,17 @@ def on_message(client, userdata, msg):
 
         # Salva dados no Banco de Dados
         if "sensor" in dados and "valor" in dados:
-            if "sensor" in dados and "valor" in dados:        
-                enviar_dados_prometheus(dados['estacao'], dados['sensor'], dados['data_hora'], dados['valor'])
-                contador += 1        
+            # Valida os campos esperados
+            estacao = dados.get("estacao")
+            sensor = dados.get("sensor")
+            valor = dados.get("valor")
+            data_hora = dados.get("data_hora")      
 
-            if contador == 48:
+            enviar_dados_prometheus(estacao, sensor, data_hora, valor)
+            obter_dados_sensor(estacao, sensor, valor, lista_estacoes)
+            contador += 1        
+
+            if contador == 49:
                 dados_recebidos.set()
                 contador = 0
 
@@ -306,3 +298,5 @@ try:
         time.sleep(1)
 except KeyboardInterrupt:
     print("Programa interrompido pelo usuário.")
+    client.loop_stop()  # Interrompe o loop do MQTT
+    client.disconnect() 
