@@ -26,8 +26,6 @@ def enviar_dados_prometheus(estacao, sensor, data_hora, valor):
 # Variável de controle para iniciar o processamento
 dados_recebidos = threading.Event()
 
-contador = 1
-
 dados_estacao = {}
 lista_estacoes = []  # Lista para armazenar as instâncias de Estacao
 
@@ -204,7 +202,9 @@ def qualificar_agua(produto):
 # Função de processamento de dados
 def loop_processar_dados():
     while True:
-        dados_recebidos.wait()
+        if not dados_recebidos.wait(timeout=40):  # Timeout de 40 segundos
+            print("Timeout atingido! Processando dados...")
+
         #print(lista_estacoes)
         for estacao in lista_estacoes:
             prod_Teste = nota_qualidade_agua(estacao.dados, pesos, limites)
@@ -227,7 +227,6 @@ def loop_processar_dados():
 
 # Função de callback para salvar os dados recebidos
 def on_message(client, userdata, msg):
-    global contador
     try:
         # Recebe a mensagem do broker
         dados = json.loads(msg.payload)
@@ -241,12 +240,9 @@ def on_message(client, userdata, msg):
             data_hora = dados.get("data_hora")      
 
             enviar_dados_prometheus(estacao, sensor, data_hora, valor)
-            obter_dados_sensor(estacao, sensor, valor, lista_estacoes)
-            contador += 1        
+            obter_dados_sensor(estacao, sensor, valor, lista_estacoes)       
 
-            if contador == 49:
-                dados_recebidos.set()
-                contador = 1
+            dados_recebidos.set()
 
         else:
             # Imprime a mensagem recebida
