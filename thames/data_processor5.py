@@ -25,6 +25,7 @@ def enviar_dados_prometheus(estacao, sensor, data_hora, valor):
 
 # Variável de controle para iniciar o processamento
 dados_recebidos = threading.Event()
+lock = threading.Lock()
 
 dados_estacao = {}
 lista_estacoes = []  # Lista para armazenar as instâncias de Estacao
@@ -86,18 +87,19 @@ def obter_dados_sensor(estacao, sensor, valor, list_obj):
     if valor is not None:
         # Procura a estação na lista de objetos
         estacao_encontrada = False
-        for est in list_obj:
-            if est.id_estacao == estacao:
-                # Se a estação já existir, adiciona ou atualiza o sensor
-                est.dados[sensor] = valor
-                estacao_encontrada = True
-                break
-        
-        # Se a estação não for encontrada, cria um novo objeto e adiciona à lista
-        if not estacao_encontrada:
-            dados_estacao = {sensor: valor}  # Cria o dicionário com o sensor e valor
-            estacao_obj = Estacao(estacao, dados_estacao)
-            list_obj.append(estacao_obj)
+        with lock:
+            for est in list_obj:
+                if est.id_estacao == estacao:
+                    # Se a estação já existir, adiciona ou atualiza o sensor
+                    est.dados[sensor] = valor
+                    estacao_encontrada = True
+                    break
+            
+            # Se a estação não for encontrada, cria um novo objeto e adiciona à lista
+            if not estacao_encontrada:
+                dados_estacao = {sensor: valor}  # Cria o dicionário com o sensor e valor
+                estacao_obj = Estacao(estacao, dados_estacao)
+                list_obj.append(estacao_obj)
 
 # Retornar um valor entre 0 e 100
 def normalizar_intervalo(valor, limite_inferior, limite_superior):
@@ -201,29 +203,38 @@ def qualificar_agua(produto):
 
 # Função de processamento de dados
 def loop_processar_dados():
+    timeout_ocorrido = False
     while True:
         if not dados_recebidos.wait(timeout=40):  # Timeout de 40 segundos
-            print("Timeout atingido! Processando dados...")
+            if not timeout_ocorrido:
+                timeout_ocorrido = True
 
-        #print(lista_estacoes)
-        for estacao in lista_estacoes:
-            prod_Teste = nota_qualidade_agua(estacao.dados, pesos, limites)
+        if timeout_ocorrido:
+            #print("Timeout atingido! Processando dados...")
 
-            estacao = estacao.id_estacao
+            #print(lista_estacoes)
+            if lista_estacoes:
+                with lock:
+                    for estacao in lista_estacoes:
+                        prod_Teste = nota_qualidade_agua(estacao.dados, pesos, limites)
 
-            nota_quali = round(prod_Teste, 3)
-            quali = qualificar_agua(prod_Teste)
-            
-            # Expor as métricas para o Prometheus
-            nota_qualidade.labels(estacao=estacao).set(nota_quali)
-            avaliacao_qualidade.labels(estacao=estacao).set(quali)
+                        estacao = estacao.id_estacao
 
-            print(f"Enviado - Estação: {estacao}, Nota: {nota_quali}, Avaliação: {quali}"))
+                        nota_quali = round(prod_Teste, 3)
+                        quali = qualificar_agua(prod_Teste)
+                        
+                        # Expor as métricas para o Prometheus
+                        nota_qualidade.labels(estacao=estacao).set(nota_quali)
+                        avaliacao_qualidade.labels(estacao=estacao).set(quali)
 
-        # Limpar dados
-        lista_estacoes.clear()
+                        print(f"Enviado - Estação: {estacao}, Nota: {nota_quali}, Avaliação: {quali}")
+
+                    # Limpar dados
+                    lista_estacoes.clear()
 
         dados_recebidos.clear()
+
+        timeout_ocorrido = False
 
 # Função de callback para salvar os dados recebidos
 def on_message(client, userdata, msg):
