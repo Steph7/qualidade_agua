@@ -30,7 +30,7 @@ services:
     depends_on:
       - prometheus
     volumes:
-      - grafana-data:/var/lib/grafana 
+      - grafana_data:/var/lib/grafana 
     networks:
       - rede
 
@@ -39,8 +39,7 @@ networks:
     driver: bridge
 
 volumes:
-  prometheus-data:
+  prometheus_data:
     driver: local
-
-  grafana-data:
+  grafana_data:
     driver: local
