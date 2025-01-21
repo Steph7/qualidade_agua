@@ -5,6 +5,7 @@ Nesse trabalho foram selecionados 9 estações do Rio Thames (região metropolit
 
 ## Lista de IDs das estações
 As estações presentes no estudo são:
+
     1. BREPON
     2. KEWPON
     3. GPRSD8A1
@@ -17,12 +18,13 @@ As estações presentes no estudo são:
 
 ## Lista de parâmetros
 Os parâmetros analisados com os dados enviados dos sensores são:
+
     1. oxigênio dissolvido
-    2. turbidez               
-    3. temperatura           
-    4. condutividade          
-    5. amonio               
-    8. ph                        
+    2. turbidez
+    3. temperatura
+    4. condutividade
+    5. amonio
+    6. ph                        
 
 ## Nota de Qualidade
 As notas foram calculadas a partir do produtório ponderado dos dados coletados. Como nem todas as estações enviam os dados de todos os sensores. Foi criada uma função que removia os sensores inexistentes e considerava apenas aqueles que enviavam dados válidos.
