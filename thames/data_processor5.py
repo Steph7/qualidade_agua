@@ -7,6 +7,9 @@ import time
 import threading
 import requests
 
+# Definir coordenadas Estacoes
+latitude_estacao = Gauge('latitude_estacao', 'Latitude das Estações do Rio Thames', ['estacao'])
+longitude_estacao = Gauge('longitude_estacao', 'Longitude das Estações do Rio Thames', ['estacao'])
 
 # Criando uma métrica Gauge 
 QUALIDADE_AGUA = Gauge('qualidade_agua', 'Sensores avaliados no Rio Thames', ['estacao', 'sensor', 'data_hora'])
@@ -37,6 +40,19 @@ class Estacao:
 
     def __repr__(self):
         return f"Estacao({self.id_estacao}, {self.dados})"
+
+# Coordenadas das Estações
+coordenadas_estacoes = [
+    ("BREPON", 51.479811, -0.303104),
+    ("KEWPON", 51.486026, -0.282838),
+    ("GPRSD8A", 51.482289, -0.250819),
+    ("HAMME2", 51.489978, -0.234679),
+    ("PUTNEY", 51.467276, -0.215313),
+    ("CADOG2", 51.482879, -0.166442),
+    ("BARIERA", 51.49571, 0.041558),
+    ("ERITH1", 51.484244, 0.211654),
+    ("E03036A", 51.47038, 0.250682)
+]
 
 # Lista de IDs das estações
 estacoes_id = [
@@ -81,6 +97,10 @@ limites = {
     "amonio": (0, 0.5),              # Amônio entre 0 e 0.5 mg/L
     "ph": (6.5, 9.5)                 # pH entre 6.5 e 9.5
 }
+
+for estacao, lat, lon in coordenadas_estacoes:
+    latitude_estacao.labels(estacao=estacao).set(lat)
+    longitude_estacao.labels(estacao=estacao).set(lon)
 
 # Para cada sensor, obtém o último valor registrado
 def obter_dados_sensor(estacao, sensor, valor, list_obj):
