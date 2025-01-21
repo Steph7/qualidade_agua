@@ -1,6 +1,6 @@
 # Qualidade da água no Rio Thames
 
-Nesse trabalho foram selecionados 9 estações do Rio Thames (região metropolitana de Londres) para que dados de 6 sensores fossem coletados e a partir disso fosse classificada a qualidade da água em cada uma das estações, assim como a qualidade geral nos pontos de estudo.
+Nesse trabalho foram selecionadas 9 estações do Rio Thames (região metropolitana de Londres) para que dados de 6 sensores fossem coletados. A partir disso, foi classificada a qualidade da água em cada uma das estações, assim como a qualidade geral nos pontos de estudo.
 
 
 ## Lista de IDs das estações
