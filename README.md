@@ -34,7 +34,6 @@ As notas foram calculadas a partir do produtório ponderado dos dados coletados.
 Foi construído um Docker, configurando as portas de redirecionamento e o ambiente correto para rodar o programa. No entanto, os arquivos do programa devem ser abertos separadamente.
 
 ```bash
-    docker-compose down
     docker-compose up --build
 ```
 
@@ -54,3 +53,12 @@ docker exec -it qualidade_agua python thames/data_collector.py
     * 8000 (transmissão de métricas p/ Prometheus)
     * 9090 (Prometheus)
     * 3000 (Grafana) <-- Dashboard
+
+Para encerar corretamente:
+
+```bash
+    docker-compose down
+    docker-compose up --build
+```
+
+Os demais terminais podem apenas ser fechados.
