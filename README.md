@@ -62,4 +62,4 @@ Para encerar corretamente:
     docker-compose down
 ```
 
-Os demais terminais podem apenas ser fechados.
+Os demais terminais podem apenas ser fechados utilizando ctrl + C.
