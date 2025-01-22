@@ -54,11 +54,12 @@ docker exec -it qualidade_agua python thames/data_collector.py
     * 9090 (Prometheus)
     * 3000 (Grafana) <-- Dashboard
 
+## Desconectar
+
 Para encerar corretamente:
 
 ```bash
     docker-compose down
-    docker-compose up --build
 ```
 
 Os demais terminais podem apenas ser fechados.

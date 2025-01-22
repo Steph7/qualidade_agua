@@ -1,0 +1,17 @@
+{
+	"ulid": "01JJ5R8019W22AR11AYZ5BVCTN",
+	"minTime": 1737468009598,
+	"maxTime": 1737475200000,
+	"stats": {
+		"numSamples": 36227,
+		"numSeries": 215,
+		"numChunks": 374
+	},
+	"compaction": {
+		"level": 1,
+		"sources": [
+			"01JJ5R8019W22AR11AYZ5BVCTN"
+		]
+	},
+	"version": 1
+}
