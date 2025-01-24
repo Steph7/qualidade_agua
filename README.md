@@ -4,7 +4,7 @@ Nesse trabalho foram selecionadas 5 estações do Rio Thames (região metropolit
 
 A **API** utilizada foi: https://environment.data.gov.uk/hydrology/doc/reference .
 
-No total o trabalho capta dados em intervalos de 15 minutos de 30 sensores.
+No total, o trabalho capta dados em intervalos de 15 minutos de 30 sensores.
 
 ## Lista de IDs das estações
 As estações presentes no estudo são:
@@ -71,8 +71,30 @@ avaliacao_qualidade = Gauge('avaliacao_qualidade', 'Avaliação da qualidade da 
 ```python 
 QUALIDADE_AGUA.labels(estacao=estacao, sensor=sensor, data_hora=data_hora).set(valor)
 ```
-
 As demais métricas foram salvas de forma análoga.
+
+### Alertas
+
+É utilizada uma QUERY para consultar o Banco de Dados do **Prometheus** (porta 9090) e retornar o timestamp do último dado captado pelo sensor.
+
+```python
+    query = f'qualidade_agua{{estacao="{est_id}", sensor="{parametro}"}}'
+```
+
+A partir disso, calcula-se se o intervalo é maior do que 20 minutos para detectar se o mesmo está enviando os dados corretamente. Como os sensores enviam dados de 15 em 15 minutos, optou-se por esperar por um intervalo superior a 20 minutos para que a inatividade fosse notificada.
+
+```python
+
+    tempo_inatividade = hora_agora - ultimo_data_hora_dt
+
+    # Verificar se a diferença é maior que 20 minutos
+    if tempo_inatividade > timedelta(minutes=20):
+        tempo_inatividade_min = tempo_inatividade.total_seconds()/60
+
+        alerta_inatividade.labels(estacao_id=est_id, sensor=parametro).set(tempo_inatividade_min)
+
+        print(f"ALERTA! {parametro} da {est_id} inativo a mais de {round(tempo_inatividade_min, 2)} minutos.")
+```
 
 ## Nota de Qualidade
 As notas foram calculadas a partir do produtório ponderado dos dados coletados.
@@ -102,7 +124,7 @@ Somatório dos pesos = 1
 Após a coleta dos valores captados pelos sensores, foi atribuída uma nota normalizada entre 0 e 100 para cada um dos parâmetros analisados.
 
 ```python
-if limite_inferior <= valor <= limite_superior:
+    if limite_inferior <= valor <= limite_superior:
         valor_normalizado = 100
     
     elif valor < limite_inferior:

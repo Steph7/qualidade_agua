@@ -119,7 +119,7 @@ def checar_inatividade():
 
                 tempo_inatividade = hora_agora - ultimo_data_hora_dt
 
-                # Verificar se a diferença é maior que 10 minutos
+                # Verificar se a diferença é maior que 20 minutos
                 if tempo_inatividade > timedelta(minutes=20):
                     tempo_inatividade_min = tempo_inatividade.total_seconds()/60
 
