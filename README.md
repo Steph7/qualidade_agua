@@ -2,7 +2,7 @@
 
 Nesse trabalho foram selecionadas 5 estações do Rio Thames (região metropolitana de Londres) para que dados de 6 sensores fossem coletados. A partir disso, foi classificada a qualidade da água em cada uma das estações, assim como a qualidade geral nos pontos de estudo.
 
-A API utilizada foi: https://environment.data.gov.uk/hydrology/doc/reference .
+A **API** utilizada foi: https://environment.data.gov.uk/hydrology/doc/reference .
 
 No total o trabalho capta dados em intervalos de 15 minutos de 30 sensores.
 
@@ -24,7 +24,55 @@ Os parâmetros analisados com os dados enviados dos sensores são:
     3. temperatura
     4. condutividade
     5. amônio
-    6. pH                        
+    6. pH                 
+
+## Como os dados foram publicados no broker
+
+O broker utilizado foi o **HIVEmqtt**. As mensagens foram publicados nos tópicos nos seguintes formatos:
+
+### Tópicos
+```python
+    # Estrutura do tópico: 'thames/<estacao>/<parametro>'
+    topico = f"/thames/{dado.estacao}/{dado.parametro}"
+```
+
+### Mensagens
+```python
+    # Dados a serem enviados
+    dados_enviar = {
+        "estacao": dado.estacao,
+        "sensor": dado.parametro,
+        "data_hora": dado.data_hora,
+        "valor": dado.valor
+    }
+```
+### Publicação e Logs
+```python
+    # Publica a string no tópico
+    client.publish(topico, json.dumps(dados_enviar))
+    print(f"Mensagem publicada: {topico} - {dados_enviar}")
+```
+
+## Como os dados foram registrados no Banco de Dados
+
+### Métricas
+
+```python
+alerta_inatividade = Gauge('alerta_inatividade', 'Tempo de inatividade de cada sensor em segundos', ['estacao_id',  'sensor'])
+latitude_estacao = Gauge('latitude_estacao', 'Latitude das Estações do Rio Thames', ['estacao'])
+longitude_estacao = Gauge('longitude_estacao', 'Longitude das Estações do Rio Thames', ['estacao'])
+QUALIDADE_AGUA = Gauge('qualidade_agua', 'Sensores avaliados no Rio Thames', ['estacao', 'sensor', 'data_hora'])
+nota_qualidade = Gauge('nota_qualidade_agua', 'Nota de qualidade da água por estação', ['estacao'])
+avaliacao_qualidade = Gauge('avaliacao_qualidade', 'Avaliação da qualidade da água por estação', ['estacao'])
+```
+
+### Registro dos dados
+
+```python 
+QUALIDADE_AGUA.labels(estacao=estacao, sensor=sensor, data_hora=data_hora).set(valor)
+```
+
+As demais métricas foram salvas de forma análoga.
 
 ## Nota de Qualidade
 As notas foram calculadas a partir do produtório ponderado dos dados coletados.
@@ -38,7 +86,6 @@ As notas foram calculadas a partir do produtório ponderado dos dados coletados.
     6. pH entre 6.5 e 9.5
 
 ### Pesos de cada parâmetro
-
     1. 0.27,   #oxigenio_dissolvido
     2. 0.12,   #salinidade
     3. 0.15,   #temperatura
@@ -69,7 +116,7 @@ De modo que se estivesse dentro do intervalo de limites, ganhava 100, e se estiv
 
 #### Produtório ponderado de notas
 
-Depois de calculada a nota para cada parâmetro é feito o produtório ponderado com os pesos definidos.
+Depois de calculada a nota para cada parâmetro, é feito o produtório ponderado com os pesos definidos.
 
 $$
 IQA = \prod_{i=1}^{n} A_i^{p_i}
@@ -77,7 +124,7 @@ $$
 
 onde A é a nota daquele parâmetro de 0 a 100 e p é o peso daquele parâmetro.
 
-O resultado final foi uma nota entre 0 e 100, que foi salva no Banco de Dados do Prometheus.
+O resultado final foi uma nota entre 0 e 100, que foi salva no Banco de Dados do **Prometheus**.
 
 #### Classificação das notas
 
@@ -90,7 +137,7 @@ Dos índices IQA (Índices de Qualidade da Água obtidos após o produtório), f
     5. 91 <= IQA < 100: qualidade = 5 # Ótima
     6. IQA >= 100:      qualidade = 6 # Excelente
 
-Obs.: Como o Grafana precisa de receber dados númericos, as notas finais de classificação foram enviadas nesse formato e posteriormente convertidas nas referentes descrições, como relacionado acima.
+Obs.: Como o **Grafana** precisa de receber dados númericos, as notas finais de classificação foram enviadas nesse formato e posteriormente convertidas nas referentes descrições, como relacionado acima.
 
 ## Como acessar o Dashboard
 Foi construído um Docker, configurando as portas de redirecionamento e o ambiente correto para rodar o programa. No entanto, os arquivos do programa devem ser abertos separadamente.
@@ -99,7 +146,7 @@ Foi construído um Docker, configurando as portas de redirecionamento e o ambien
     docker-compose up --build
 ```
 
-O data_processor é o arquivo que processa os dados. Ele coleta os dados publicados no broker, realiza os cálculos e salva no Banco de Dados do Prometheus. 
+O data_processor é o arquivo que processa os dados. Ele coleta os dados publicados no broker, realiza os cálculos e salva no Banco de Dados do **Prometheus**. 
 
 ```bash
 docker exec -it qualidade_agua python thames/data_processor.py
@@ -119,9 +166,9 @@ senha: admin
 ```
 
 ## Portas de redirecionamento
-    * 8000 (transmissão de métricas p/ **Prometheus**)
-    * 9090 (**Prometheus**)
-    * 3000 (**Grafana**) <-- Dashboard
+    * 8000 (transmissão de métricas p/ Prometheus)
+    * 9090 (Prometheus)
+    * 3000 (Grafana) <-- Dashboard
 
 ## Desconectar
 

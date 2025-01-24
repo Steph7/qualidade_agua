@@ -44,12 +44,12 @@ parametros_url = [
 ]
 
 parametros_nome = [
-    "oxigenio_dissolvido",    #A - 01, 07, 13, 19, 25, 31
-    "salinidade",             #B - 02, 08, 14, 20, 26, 32
-    "temperatura",            #C - 03, 09, 15, 21, 27, 33
-    "condutividade",          #D - 04, 10, 16, 22, 28, 34
-    "amonio",                 #E - 05, 11, 17, 23, 29, 35
-    "ph"                      #F - 06, 12, 18, 24, 30, 36   
+    "oxigenio_dissolvido",    #A - 01, 07, 13, 19, 25
+    "salinidade",             #B - 02, 08, 14, 20, 26
+    "temperatura",            #C - 03, 09, 15, 21, 27
+    "condutividade",          #D - 04, 10, 16, 22, 28
+    "amonio",                 #E - 05, 11, 17, 23, 29
+    "ph"                      #F - 06, 12, 18, 24, 30   
 ]
 
 atualizar_nome_param = dict(zip(parametros_url, parametros_nome))
