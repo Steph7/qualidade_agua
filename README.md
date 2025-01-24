@@ -98,6 +98,12 @@ A partir disso, calcula-se se o intervalo é maior do que 20 minutos para detect
         print(f"ALERTA! {parametro} da {est_id} inativo a mais de {round(tempo_inatividade_min, 2)} minutos.")
 ```
 
+## Dashboards
+
+A ferramenta de visualização de dados utilizada foi o **Grafana**. Ela foi alimentada com os dados salvos em séries temporais no **Prometheus**.
+
+
+
 ## Nota de Qualidade
 As notas foram calculadas a partir do produtório ponderado dos dados coletados.
 
