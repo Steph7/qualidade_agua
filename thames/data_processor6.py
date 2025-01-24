@@ -1,11 +1,19 @@
 import paho.mqtt.client as mqtt
 from pymongo import MongoClient, ASCENDING
 from prometheus_client import start_http_server, Gauge
-from datetime import datetime
+from prometheus_api_client import PrometheusConnect
+from datetime import datetime, timedelta
 import json
 import time
 import threading
 import requests
+
+# Conectar ao Prometheus
+prometheus_url = 'http://prometheus:9090'
+prom = PrometheusConnect(url=prometheus_url, disable_ssl=True)
+
+# Definir alerta inatividade
+alerta_inatividade = Gauge('alerta_inatividade', 'Tempo de inatividade de cada sensor em segundos', ['estacao_id',  'sensor'])
 
 # Definir coordenadas Estacoes
 latitude_estacao = Gauge('latitude_estacao', 'Latitude das Estações do Rio Thames', ['estacao'])
@@ -101,6 +109,38 @@ limites = {
 for estacao, lat, lon in coordenadas_estacoes:
     latitude_estacao.labels(estacao=estacao).set(lat)
     longitude_estacao.labels(estacao=estacao).set(lon)
+
+# Checar inatividade dos sensores
+def checar_inatividade():
+    for est_id in estacoes_id:
+        for parametro in parametros_nome:
+            query = f'qualidade_agua{{estacao="{est_id}", sensor="{parametro}"}}'
+        
+            resultado_query = prom.custom_query(query=query)
+
+            if resultado_query:
+                ultimo_data_hora_str = resultado_query[-1]['metric']['data_hora']
+                ultimo_data_hora_dt = datetime.fromisoformat(ultimo_data_hora_str)
+                ultimo_data_hora_int = int(ultimo_data_hora_dt.timestamp())
+
+                hora_agora = datetime.utcnow()
+
+                tempo_inatividade = hora_agora - ultimo_data_hora_dt
+
+                # Verificar se a diferença é maior que 10 minutos
+                if tempo_inatividade > timedelta(minutes=10):
+                    tempo_inatividade_min = tempo_inatividade.total_seconds()/60
+
+                    alerta_inatividade.labels(estacao_id=est_id, sensor=parametro).set(tempo_inatividade_min)
+
+                    print(f"ALERTA! {sensor} inativo a mais de {tempo_inatividade_min} minutos.")
+
+            else:
+                print(f"Sem retorno de dados para a query: {query}.")
+
+            time.sleep(10) # Aguarda 10s para evitar sobrecarga
+
+
 
 # Para cada sensor, obtém o último valor registrado
 def obter_dados_sensor(estacao, sensor, valor, list_obj):
@@ -310,6 +350,11 @@ client.loop_start()
 # Inicia o processamento em um thread separado
 processamento_thread = threading.Thread(target=loop_processar_dados)
 processamento_thread.start()
+
+# Inicia uma thread para monitorar inatividade dos sensores
+# Criando e iniciando a thread para monitorar a estação "BREPON"
+alerta_thread = threading.Thread(target=checar_inatividade)
+alerta_thread.start()
 
 # Aguardar a interrupção do programa
 try:

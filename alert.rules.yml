@@ -1,0 +1,11 @@
+groups:
+  - name: alertas_inatividade
+    rules:
+      - alert: EstacaoInativa
+        expr: alerta_inatividade > 10  # Verifica se inatividade maior que 10 minutos
+        for: 1m  
+        labels:
+          severity: critical
+        annotations:
+          summary: "ALERTA!"
+          description: "O sensor {{ $labels.sensor }} da estação {{ $labels.estacao_id }} está inativo por mais de 10 minutos."

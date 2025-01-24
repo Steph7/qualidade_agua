@@ -40,7 +40,7 @@ Foi construído um Docker, configurando as portas de redirecionamento e o ambien
 O data_processor é o arquivo que processa os dados. Ele coleta os dados publicados no broker, realiza os cálculos e salva no Banco de Dados do Prometheus. 
 
 ```bash
-docker exec -it qualidade_agua python thames/data_processor5.py
+docker exec -it qualidade_agua python thames/data_processor6.py
 ```
 
 O data_collector é o programa que busca os dados na API e os publica no broker HIVEmqtt. 
