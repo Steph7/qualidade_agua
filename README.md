@@ -72,7 +72,7 @@ De modo que se estivesse dentro do intervalo de limites, ganhava 100, e se estiv
 Depois de calculada a nota para cada parâmetro é feito o produtório ponderado com os pesos definidos.
 
 $$
-\prod_{i=1}^{n} A_i^{p_i}
+IQA = \prod_{i=1}^{n} A_i^{p_i}
 $$
 
 onde A é a nota daquele parâmetro de 0 a 100 e p é o peso daquele parâmetro.
