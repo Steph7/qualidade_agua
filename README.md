@@ -121,7 +121,7 @@ As notas foram calculadas a partir do produtório ponderado dos dados coletados.
     1. Oxigênio Dissolvido entre 5 e 9 mg/L
     2. Salinidade entre 0 e 0.5 psU
     3. Temperatura entre 0 e 30 ºC
-    4. Condutividade entre 70 e 750 mS
+    4. Condutividade entre 70 e 750 uS/cm
     5. Amônio entre 0 e 0.5 mg/L
     6. pH entre 6.5 e 9.5
 
