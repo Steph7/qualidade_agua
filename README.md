@@ -103,16 +103,16 @@ A partir disso, calcula-se se o intervalo é maior do que 20 minutos para detect
 A ferramenta de visualização de dados utilizada foi o **Grafana**. Ela foi alimentada com os dados salvos em séries temporais no **Prometheus**.
 
 ### Dados dispostos por estação
-![](/imagens/Captura de Tela 2025-01-24 às 16.50.04.png)
+![](imagens/Captura de Tela 2025-01-24 às 16.50.04.png)
 
 ### Dados gerais
-![](/imagens/Captura de Tela 2025-01-24 às 16.50.31.png)
+![](imagens/Captura de Tela 2025-01-24 às 16.50.31.png)
 
 ### Dados dispostos sensor por estação
-![](/imagens/Captura de Tela 2025-01-24 às 16.51.31.png)
+![](imagens/Captura de Tela 2025-01-24 às 16.51.31.png)
 
 ### Vista geral do Dashboard
-![](/imagens/Captura de Tela 2025-01-24 às 16.52.50.png)
+![](imagens/Captura de Tela 2025-01-24 às 16.52.50.png)
 
 ## Nota de Qualidade
 As notas foram calculadas a partir do produtório ponderado dos dados coletados.
