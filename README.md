@@ -114,6 +114,14 @@ A ferramenta de visualização de dados utilizada foi o **Grafana**. Ela foi ali
 ### Vista geral do Dashboard
 ![](imagens/imagem4.png)
 
+### Sinalização de Cores
+
+![](imagens/imagem5.png)
+
+As cores vermelha, laranja e amarelo são cores que sinalizam que aquele parâmetro requer mais atenção, já que não está dentro dos limites desejados. Sendo o vermelho o nível máximo de alerta e o amarelo, o primeiro indício de que algo deve ser melhorado.
+
+Já as cores verde, roxo e azul, indicam que os parâmetros estão bons. Sendo que o azul, indica que a água está o mais dentro dos limites desejados possível. E o verde que o valor está bom, mas não dentro do ideal.
+
 ## Nota de Qualidade
 As notas foram calculadas a partir do produtório ponderado dos dados coletados.
 
