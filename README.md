@@ -12,9 +12,7 @@ As estações presentes no estudo são:
     4. HAMME2
     5. PUTNEY
     6. CADOG2
-    7. BARIERA
-    8. ERITH1
-    9. E03036A
+    7. E03036A
 
 ## Lista de parâmetros
 Os parâmetros analisados com os dados enviados dos sensores são:
