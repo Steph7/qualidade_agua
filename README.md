@@ -55,6 +55,8 @@ O broker utilizado foi o **HIVEmqtt**. As mensagens foram publicados nos tópico
 
 ## Como os dados foram registrados no Banco de Dados
 
+Os dados foram salvos no Banco de Dados do **Prometheus**, nos formatos descritos a seguir. Os timestamps referentes ao momento da coleta dos dados de cada sensor foram preservados.
+
 ### Métricas
 
 ```python
@@ -171,20 +173,20 @@ Foi construído um Docker, configurando as portas de redirecionamento e o ambien
 O data_processor é o arquivo que processa os dados. Ele coleta os dados publicados no broker, realiza os cálculos e salva no Banco de Dados do **Prometheus**. 
 
 ```bash
-docker exec -it qualidade_agua python thames/data_processor.py
+    docker exec -it qualidade_agua python thames/data_processor.py
 ```
 
 O data_collector é o programa que busca os dados na API e os publica no broker **HIVEmqtt**. 
 
 ```bash
-docker exec -it qualidade_agua python thames/data_collector.py
+    docker exec -it qualidade_agua python thames/data_collector.py
 ```
 
 Para abrir o dashboardo do **Granafa**, foram preservadas as definições padrões:
 
 ```bash
-usuário: admin
-senha: admin
+    usuário: admin
+    senha: admin
 ```
 
 ## Portas de redirecionamento
